@@ -1,3 +1,7 @@
 #Doc des install
 listInstall.txt
-
+Documentation.txt
+exempleGenerate.sql
+gen2.sql
+.idea/*
+PyGestpgsql/backup/*
