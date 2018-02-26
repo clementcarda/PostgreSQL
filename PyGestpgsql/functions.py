@@ -9,11 +9,13 @@
 #bases des fonctions de notre appli
 
 #####Importations#####
+import getpass
 import tarfile
 import psycopg2
 import os
 import re
 from datetime import datetime
+from crontab import CronTab
 
 #####Fonctions#####
 def connector(user):
@@ -43,7 +45,23 @@ def backingUp(bpath, dbname):
 
 def nameArchive():
     now = datetime.now()
-    name = str(now.year)+"-"+str(now.month)+"-"+str(now.day)+" "+str(now.hour)+":"+str(now.minute)+":"+str(now.second)
+    year = str(now.year)
+    month = str(now.month)
+    if now.month < 10:
+        month = "0"+month
+    day = str(now.day)
+    if now.day < 10:
+        day = "0"+month
+    hour = str(now.hour)
+    if now.hour < 10:
+        hour = "0"+hour
+    minute = str(now.minute)
+    if now.minute < 10:
+        minute = "0" + minute
+    second = str(now.second)
+    if now.second < 10:
+        second = "0" + second
+    name = year+"-"+month+"-"+day+" "+hour+":"+minute+":"+second
     return name
 
 def archive(backupFolder):
@@ -70,3 +88,25 @@ def listArchive(backupFolder):
             i += 1
     return listArch
 
+def restoreBackUp(bpath, nbBackUp):
+    listArch = listArchive(bpath+"backup")
+    arch = tarfile.open(bpath+"backup/"+listArch[nbBackUp]+".tar.gz")
+    arch.extractall(bpath+"tmp")
+    arch.close()
+    listSQL = os.listdir(bpath+"tmp/")
+    for sql in listSQL:
+        dbname = ""
+        i = 0
+        for el in sql:
+            if el == ".":
+                dbname = sql[0:i]
+            i += 1
+        os.system("psql "+dbname+" < "+bpath+"/tmp/"+sql)
+        os.system("rm "+bpath+"/tmp/"+sql)
+
+def paramCron(rep, conf):
+    user = getpass.getuser
+    my_cron = CronTab(user)
+    job = my_cron.new(command='python3 '+rep+'main.py')
+    job.setall(conf)
+    my_cron.write

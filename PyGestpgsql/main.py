@@ -10,25 +10,52 @@
 
 
 #####Importation#####
-import functions, os
+import functions, os, conf
 
 #####Initialisation#####
-#repertoire de sauvegarde
-backupRep = "/home/clement/Cours/B2/Base_de_Données/PostgreSQL/Projet/PostgreSQL/PyGestpgsql/backup"
-#vérivication si rep existe, sinon le créé
-if not os.path.isdir(backupRep):
-    os.mkdir(backupRep)
+
+#repertoire
+Rep = conf.repertory
+
+#vérivication si rep/backup existe, sinon le créé
+if not os.path.isdir(Rep+ "backup"):
+    os.mkdir(Rep+"backup")
+#vérivication si rep/tmp existe, sinon le créé
+if not os.path.isdir(Rep+ "tmp"):
+    os.mkdir(Rep+"tmp")
+
+#####fonction#####
+def backupAll(cur):
+    listDB = functions.listDB(cur)
+
+    for table in listDB:
+        functions.backingUp(Rep + "backup/" + table + ".sql", table)
+
+    functions.archive(Rep + "backup")
+
+def launchRestore():
+    # Liste les archives existante
+    list = functions.listArchive(Rep + "backup")
+    i = 0
+    for arch in list:
+        print(str(i) + " : " + arch)
+        i += 1
+    index = int(input("choisissez le numéro de la sauvegarde à récupérer "))
+
+    # extraction et restauration de l'archive souaité
+    functions.restoreBackUp(Rep, index)
+
+
 
 #####Code#####
 
 ##sauvegarde  et archivage de toute les DB
 cur = functions.connector("clement")
-listDB = functions.listDB(cur)
+#backupAll(cur)
 
-for table in listDB:
-    functions.backingUp(backupRep+"/"+table+".sql", table)
+launchRestore()
 
-functions.archive(backupRep)
 
-#Liste les archives existante
-print(functions.listArchive(backupRep))
+
+
+
