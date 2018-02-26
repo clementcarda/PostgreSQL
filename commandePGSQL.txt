@@ -1,4 +1,0 @@
-création d'une base de donnée
-	$ createdb {nom_base}
-connexion à la base de donnée
-	$ psql {nom_base} #par défaut se connect à la base du même nom que le User
