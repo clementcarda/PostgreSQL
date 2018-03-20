@@ -10,40 +10,33 @@
 
 
 #####Importation#####
-import functions, os, conf
+import functions
+import os
+import yaml
 
 #####Initialisation#####
 
 #repertoire
-Rep = conf.repertory
+rep = os.getcwd()
+
+
+rep = open("/home/clement/Cours/B2/Base_de_Données/PostgreSQL/Projet/PostgreSQL/PyGestpgsql/parameter.yml", "r+")
+try:
+    param = yaml.load(rep)
+except yaml.YAMLError as exc:
+    print(exc)
+print(param)
+
+
+Rep = "home/clement/Cours/B2/Base_de_Données/PostgreSQL/Projet/PostgreSQL/PyGestpgsql/"
 
 #vérivication si rep/backup existe, sinon le créé
-if not os.path.isdir(Rep+ "backup"):
-    os.mkdir(Rep+"backup")
+#if not os.path.isdir(Rep+ "backup"):
+#    os.mkdir(Rep+"backup")
 #vérivication si rep/tmp existe, sinon le créé
-if not os.path.isdir(Rep+ "tmp"):
-    os.mkdir(Rep+"tmp")
+#if not os.path.isdir(Rep+ "tmp"):
+#    os.mkdir(Rep+"tmp")
 
-#####fonction#####
-def backupAll(cur):
-    listDB = functions.listDB(cur)
-
-    for table in listDB:
-        functions.backingUp(Rep + "backup/" + table + ".sql", table)
-
-    functions.archive(Rep + "backup")
-
-def launchRestore():
-    # Liste les archives existante
-    list = functions.listArchive(Rep + "backup")
-    i = 0
-    for arch in list:
-        print(str(i) + " : " + arch)
-        i += 1
-    index = int(input("choisissez le numéro de la sauvegarde à récupérer "))
-
-    # extraction et restauration de l'archive souaité
-    functions.restoreBackUp(Rep, index)
 
 
 
@@ -51,11 +44,3 @@ def launchRestore():
 
 ##sauvegarde  et archivage de toute les DB
 cur = functions.connector("clement")
-#backupAll(cur)
-
-launchRestore()
-
-
-
-
-

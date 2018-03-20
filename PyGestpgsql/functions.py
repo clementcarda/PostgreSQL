@@ -16,8 +16,11 @@ import os
 import re
 from datetime import datetime
 from crontab import CronTab
+import pureyaml
 
 #####Fonctions#####
+
+#créer un connecteur avec la base de donnée PostGres
 def connector(user):
     #Definition de la chaine de texte de connexion
     conn_string = "host='localhost' user='"+user+"'"
@@ -31,18 +34,21 @@ def connector(user):
 
     return cursor
 
-def listDB(cur):
+#renvoie une liste des bases de données de la BDD
+def listDB(cursor):
     #execute une commande pour récupérer toutes les bases de données
-    cur.execute("""SELECT datname FROM pg_database WHERE datistemplate = false""")
+    cursor.execute("""SELECT datname FROM pg_database WHERE datistemplate = false""")
     #créé et retourne la liste de ces bases de données
     list = []
-    for table in cur.fetchall():
+    for table in cursor.fetchall():
         list.append(table[0])
     return list
 
+#Créer une sauvegarde d'une base de données dbname dans le répertoire bpath
 def backingUp(bpath, dbname):
    os.system("pg_dump "+dbname+" > "+bpath)
 
+#génère un nom pour l'archive en prenant la date
 def nameArchive():
     now = datetime.now()
     year = str(now.year)
@@ -64,6 +70,7 @@ def nameArchive():
     name = year+"-"+month+"-"+day+" "+hour+":"+minute+":"+second
     return name
 
+#créer une archive avec les fichier .sql de la sauvegarde
 def archive(backupFolder):
     name = nameArchive()
     tf = tarfile.open(backupFolder+"/"+name+".tar.gz", "x:gz")
@@ -76,6 +83,7 @@ def archive(backupFolder):
             os.system("rm "+backupFolder+"/"+file)
     tf.close()
 
+#renvoie une liste des archives du répertoire de sauvegar
 def listArchive(backupFolder):
     list = os.listdir(backupFolder)
     listArch = []
@@ -110,3 +118,23 @@ def paramCron(rep, conf):
     job = my_cron.new(command='python3 '+rep+'main.py')
     job.setall(conf)
     my_cron.write
+
+def backupAll(cursor):
+    listDB = functions.listDB(cursor)
+
+    for table in listDB:
+        functions.backingUp(Rep + "backup/" + table + ".sql", table)
+
+    functions.archive(Rep + "backup")
+
+def launchRestore():
+    # Liste les archives existante
+    list = functions.listArchive(Rep + "backup")
+    i = 0
+    for arch in list:
+        print(str(i) + " : " + arch)
+        i += 1
+    index = int(input("choisissez le numéro de la sauvegarde à récupérer "))
+
+    # extraction et restauration de l'archive souaité
+    functions.restoreBackUp(Rep, index)

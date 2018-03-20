@@ -1,0 +1,9 @@
+#fichier conservant les paramêtre de configuration
+
+repertory:
+    principal: "/home/clement/Cours/B2/Base_de_Données/PostgreSQL/Projet/PostgreSQL/PyGestpgsql/"
+    backup_folder: "backup"
+    tmp_folder: "tmp"
+
+crontab:
+    timer: "0 0 0 0 0"
