@@ -7,3 +7,4 @@ gen2.sql
 .idea/*
 PyGestpgsql/backup/*
 PyGestpgsql/tmp/*
+PyGestpgsql/test.py

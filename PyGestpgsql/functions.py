@@ -3,8 +3,7 @@
 #
 #Auteur Clément Cardarelli
 #Date Création 12/02
-#
-#Derniere Modification 26/02
+
 #
 #bases des fonctions de notre appli
 
@@ -15,7 +14,10 @@ import psycopg2
 import os
 import re
 from datetime import datetime
+
+import sys
 from crontab import CronTab
+import yaml
 import pureyaml
 
 #####Fonctions#####
@@ -96,12 +98,14 @@ def listArchive(backupFolder):
             i += 1
     return listArch
 
-def restoreBackUp(bpath, nbBackUp):
-    listArch = listArchive(bpath+"backup")
-    arch = tarfile.open(bpath+"backup/"+listArch[nbBackUp]+".tar.gz")
-    arch.extractall(bpath+"tmp")
+
+#restore une sauvegarde
+def restoreBackUp(bpath,archive):
+    arch = tarfile.open(bpath+"/backup/"+archive+".tar.gz")
+    arch.extractall(bpath+"/tmp")
     arch.close()
-    listSQL = os.listdir(bpath+"tmp/")
+    clearDB()
+    listSQL = os.listdir(bpath+"/tmp/")
     for sql in listSQL:
         dbname = ""
         i = 0
@@ -109,6 +113,7 @@ def restoreBackUp(bpath, nbBackUp):
             if el == ".":
                 dbname = sql[0:i]
             i += 1
+
         os.system("psql "+dbname+" < "+bpath+"/tmp/"+sql)
         os.system("rm "+bpath+"/tmp/"+sql)
 
@@ -119,17 +124,17 @@ def paramCron(rep, conf):
     job.setall(conf)
     my_cron.write
 
-def backupAll(cursor):
-    listDB = functions.listDB(cursor)
+def backupAll(cursor, Rep):
+    DB = listDB(cursor)
 
-    for table in listDB:
-        functions.backingUp(Rep + "backup/" + table + ".sql", table)
+    for table in DB:
+        backingUp(Rep + "/backup/" + table + ".sql", table)
 
-    functions.archive(Rep + "backup")
+    archive(Rep + "/backup")
 
-def launchRestore():
+def launchRestore(Rep):
     # Liste les archives existante
-    list = functions.listArchive(Rep + "backup")
+    list = listArchive(Rep + "backup")
     i = 0
     for arch in list:
         print(str(i) + " : " + arch)
@@ -137,4 +142,23 @@ def launchRestore():
     index = int(input("choisissez le numéro de la sauvegarde à récupérer "))
 
     # extraction et restauration de l'archive souaité
-    functions.restoreBackUp(Rep, index)
+    restoreBackUp(Rep, index)
+
+def pushParameters(rep_path, param):
+    with open(rep_path + "/parameter.yml", 'w') as yaml_file:
+        yaml_file.write(yaml.dump(param, default_flow_style=False))
+
+def clearDB():
+    cur = connector('clement')
+    try:
+        cur.execute(
+            "SELECT table_schema,table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_schema,table_name")
+        rows = cur.fetchall()
+        for row in rows:
+            print
+            "dropping table: ", row[1]
+            cur.execute("drop table " + row[1] + " cascade")
+        cur.close()
+    except:
+        print
+        "Error: ", sys.exc_info()[1]
