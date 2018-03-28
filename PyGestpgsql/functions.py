@@ -23,9 +23,11 @@ import pureyaml
 #####Fonctions#####
 
 #créer un connecteur avec la base de donnée PostGres
-def connector(user):
+def connector(host, user, psswd, dbase = None):
     #Definition de la chaine de texte de connexion
-    conn_string = "host='localhost' user='"+user+"'"
+    conn_string = "host='"+host+"' user='"+user+"' password='"+psswd+"'"
+    if dbase is not None:
+        conn_string += "database='"+dbase+"'"
 
     # tente une connexion, si elle echoue cela levera une erreure
     conn = psycopg2.connect(conn_string)
@@ -46,10 +48,6 @@ def listDB(cursor):
         list.append(table[0])
     return list
 
-#Créer une sauvegarde d'une base de données dbname dans le répertoire bpath
-def backingUp(bpath, dbname):
-   os.system("pg_dump "+dbname+" > "+bpath)
-
 #génère un nom pour l'archive en prenant la date
 def nameArchive():
     now = datetime.now()
@@ -69,21 +67,27 @@ def nameArchive():
     second = str(now.second)
     if now.second < 10:
         second = "0" + second
-    name = year+"-"+month+"-"+day+" "+hour+":"+minute+":"+second
+    name = year+"-"+month+"-"+day+"_"+hour+":"+minute+":"+second
     return name
 
 #créer une archive avec les fichier .sql de la sauvegarde
-def archive(backupFolder):
+def archive(originFolder, targetFolder):
     name = nameArchive()
-    tf = tarfile.open(backupFolder+"/"+name+".tar.gz", "x:gz")
+    tf = tarfile.open(targetFolder+"/"+name+".tar.gz", "x:gz")
 
-    list = os.listdir(backupFolder)
+    list = os.listdir(originFolder)
     regx = re.compile("^.+sql$")
     for file in list:
         if regx.match(file):
-            tf.add(backupFolder+"/"+file, arcname=file, recursive=False)
-            os.system("rm "+backupFolder+"/"+file)
+            tf.add(originFolder+"/"+file, arcname=file, recursive=False)
+            os.system("rm "+originFolder+"/"+file)
     tf.close()
+
+#liste le nombre d'archive et si elle dépasse la limite autorisé en supprime 1
+def limitNBArchive(targetFolder, nbMax):
+    listArch = os.listdir(targetFolder)
+    if len(listArch) >= nbMax:
+        os.system("rm "+targetFolder+"/"+listArch[0])
 
 #renvoie une liste des archives du répertoire de sauvegar
 def listArchive(backupFolder):
@@ -99,12 +103,15 @@ def listArchive(backupFolder):
     return listArch
 
 
+
+
+
+
 #restore une sauvegarde
 def restoreBackUp(bpath,archive):
     arch = tarfile.open(bpath+"/backup/"+archive+".tar.gz")
     arch.extractall(bpath+"/tmp")
     arch.close()
-    clearDB()
     listSQL = os.listdir(bpath+"/tmp/")
     for sql in listSQL:
         dbname = ""
@@ -113,52 +120,6 @@ def restoreBackUp(bpath,archive):
             if el == ".":
                 dbname = sql[0:i]
             i += 1
-
+        print("\nrestoring "+dbname)
         os.system("psql "+dbname+" < "+bpath+"/tmp/"+sql)
         os.system("rm "+bpath+"/tmp/"+sql)
-
-def paramCron(rep, conf):
-    user = getpass.getuser
-    my_cron = CronTab(user)
-    job = my_cron.new(command='python3 '+rep+'main.py')
-    job.setall(conf)
-    my_cron.write
-
-def backupAll(cursor, Rep):
-    DB = listDB(cursor)
-
-    for table in DB:
-        backingUp(Rep + "/backup/" + table + ".sql", table)
-
-    archive(Rep + "/backup")
-
-def launchRestore(Rep):
-    # Liste les archives existante
-    list = listArchive(Rep + "backup")
-    i = 0
-    for arch in list:
-        print(str(i) + " : " + arch)
-        i += 1
-    index = int(input("choisissez le numéro de la sauvegarde à récupérer "))
-
-    # extraction et restauration de l'archive souaité
-    restoreBackUp(Rep, index)
-
-def pushParameters(rep_path, param):
-    with open(rep_path + "/parameter.yml", 'w') as yaml_file:
-        yaml_file.write(yaml.dump(param, default_flow_style=False))
-
-def clearDB():
-    cur = connector('clement')
-    try:
-        cur.execute(
-            "SELECT table_schema,table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_schema,table_name")
-        rows = cur.fetchall()
-        for row in rows:
-            print
-            "dropping table: ", row[1]
-            cur.execute("drop table " + row[1] + " cascade")
-        cur.close()
-    except:
-        print
-        "Error: ", sys.exc_info()[1]
