@@ -27,7 +27,7 @@ def connector(host, user, psswd, dbase = None):
     #Definition de la chaine de texte de connexion
     conn_string = "host='"+host+"' user='"+user+"' password='"+psswd+"'"
     if dbase is not None:
-        conn_string += "database='"+dbase+"'"
+        conn_string += "dbname='"+dbase+"'"
 
     # tente une connexion, si elle echoue cela levera une erreure
     conn = psycopg2.connect(conn_string)
@@ -48,6 +48,10 @@ def listDB(cursor):
         list.append(table[0])
     return list
 
+#dump la BDD dans un .sql
+def pgDump(dbase, path):
+    os.system("pg_dump {0} > {1}/{0}.sql".format(dbase, path))
+
 #génère un nom pour l'archive en prenant la date
 def nameArchive():
     now = datetime.now()
@@ -67,7 +71,7 @@ def nameArchive():
     second = str(now.second)
     if now.second < 10:
         second = "0" + second
-    name = year+"-"+month+"-"+day+"_"+hour+":"+minute+":"+second
+    name = year+"-"+month+"-"+day+"_"+hour+"-"+minute+"-"+second
     return name
 
 #créer une archive avec les fichier .sql de la sauvegarde
@@ -86,8 +90,12 @@ def archive(originFolder, targetFolder):
 #liste le nombre d'archive et si elle dépasse la limite autorisé en supprime 1
 def limitNBArchive(targetFolder, nbMax):
     listArch = os.listdir(targetFolder)
+    listArch.sort()
     if len(listArch) >= nbMax:
-        os.system("rm "+targetFolder+"/"+listArch[0])
+        i = 0
+        while i < len(listArch)-nbMax:
+            os.system("rm {0}/{1}".format(targetFolder, listArch[i]))
+            i += 1
 
 #renvoie une liste des archives du répertoire de sauvegar
 def listArchive(backupFolder):
