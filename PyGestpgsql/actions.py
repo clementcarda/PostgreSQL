@@ -31,22 +31,15 @@ def backupAllAction(cursor, list_path, nb_backup):
     functions.archive(list_path['tmp_path'], list_path['backup_path'])
 
 
-def restoreAllAction(rep_path):
+def restoreAllAction(list_path):
     #TODO efacer la totalité de chaque tableau avant de lancer la restauration
 
     #liste les archives existante et demande au user quel sauvegarde restaurer
-    listArchive = functions.listArchive(rep_path+'/backup')
-    i = 0
-    print("liste des archives")
-    for archive in listArchive:
-        i+=1
-        print(i, ': '+archive)
-    nbArch = input('quel achive souhaitez vous restorer? ')
-    nbArch = int(nbArch)-1
+    listArchive = functions.listArchive(list_path['backup_path'])
 
-    print("nous restorons :", listArchive[nbArch])
+    choosedArchive = functions.chooseArchive(listArchive)
 
-    functions.restoreBackUp(rep_path, listArchive[nbArch])
+    functions.restoreBackUp(list_path, choosedArchive)
 
 
 
@@ -74,3 +67,8 @@ def restoreAllAction(rep_path):
 #            None
 #    dbcur.close()
 #    print(dbase)
+
+def restoreOneAction():
+    #TODO demander au user quel BDD il souhaite restaurer,
+        # faire comme restoreAll mais uniquement pour la BDD selectionné
+    None

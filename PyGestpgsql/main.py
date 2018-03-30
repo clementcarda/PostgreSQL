@@ -49,7 +49,8 @@ if not os.path.isdir(tmp_path):
 
 #tente une connexion à postgres ou renvoie une exceprtion en cas d'echec
 try:
-    cur = functions.connector(p.HOST, p.USER, p.PASSWORD)
+    conn = functions.connector(p.HOST, p.USER, p.PASSWORD)
+    cur = conn.cursor()
 except:
     raise Exception("Something went wrong with the conection")
 
@@ -60,7 +61,7 @@ actions = {
     '-h': "print('this is help')",
     '-l': "act.listDBAction(cur)",
     '-s': "act.backupAllAction(cur, list_path, p.NB_BACKUP)",
-    '-r': "act.restoreAllAction(rep_path)"
+    '-r': "act.restoreAllAction(list_path)"
 }
 
 #lors du lancement de l'appli vérifie si un argumant est placé

@@ -8,12 +8,12 @@
 #bases des fonctions de notre appli
 
 #####Importations#####
-import getpass
 import tarfile
 import psycopg2
 import os
 import re
 from datetime import datetime
+import parameter as p
 
 import sys
 from crontab import CronTab
@@ -34,9 +34,9 @@ def connector(host, user, psswd, dbase = None):
 
     # conn.cursor retourne un objet curseur qui peut servir à
     # exécuter des commandes postgres
-    cursor = conn.cursor()
+    #cursor = conn.cursor()
 
-    return cursor
+    return conn
 
 #renvoie une liste des bases de données de la BDD
 def listDB(cursor):
@@ -93,7 +93,7 @@ def limitNBArchive(targetFolder, nbMax):
     listArch.sort()
     if len(listArch) >= nbMax:
         i = 0
-        while i < len(listArch)-nbMax:
+        while i <= len(listArch)-nbMax:
             os.system("rm {0}/{1}".format(targetFolder, listArch[i]))
             i += 1
 
@@ -110,17 +110,26 @@ def listArchive(backupFolder):
             i += 1
     return listArch
 
+#propose à l'utilisateur de choisir l'archive à restorer
+def chooseArchive(listArchive):
+    i = 0
+    print("liste des archives")
+    for archive in listArchive:
+        i += 1
+        print(i, ': ' + archive)
+    nbArch = input('quel achive souhaitez vous restorer? ')
+    nbArch = int(nbArch) - 1
 
-
-
-
+    print("nous restorons : {0}".format(listArchive[nbArch]))
+    return listArchive[nbArch]
 
 #restore une sauvegarde
-def restoreBackUp(bpath,archive):
-    arch = tarfile.open(bpath+"/backup/"+archive+".tar.gz")
-    arch.extractall(bpath+"/tmp")
+def restoreBackUp(bpath,choosed_archive):
+    arch = tarfile.open("{0}/{1}.tar.gz".format(bpath['backup_path'],
+                                                                 choosed_archive))
+    arch.extractall(bpath['tmp_path'])
     arch.close()
-    listSQL = os.listdir(bpath+"/tmp/")
+    listSQL = os.listdir(bpath['tmp_path'])
     for sql in listSQL:
         dbname = ""
         i = 0
@@ -128,6 +137,23 @@ def restoreBackUp(bpath,archive):
             if el == ".":
                 dbname = sql[0:i]
             i += 1
-        print("\nrestoring "+dbname)
-        os.system("psql "+dbname+" < "+bpath+"/tmp/"+sql)
-        os.system("rm "+bpath+"/tmp/"+sql)
+
+        eraseTable(dbname)
+        os.system("psql {0} < {1}/{2}".format(dbname, bpath['tmp_path'], sql))
+        os.system("rm {0}/{1}".format(bpath['tmp_path'], sql))
+
+#efface les tables de la base de donnée
+def eraseTable(dbname):
+    #se connecter à la BDD
+    dbconn = connector(p.HOST, p.USER, p.PASSWORD, dbname)
+    dbcur = dbconn.cursor()
+
+    dbcur.execute("""SELECT table_name FROM information_schema.tables
+                   WHERE table_schema = 'public'""")
+
+    for table in dbcur.fetchall():
+
+        dbcur.execute("""DELETE FROM {0}""".format(table[0]))
+
+    dbconn.commit()
+    dbcur.close()
