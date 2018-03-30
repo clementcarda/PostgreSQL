@@ -24,9 +24,7 @@ backup_path = p.BACKUP_PATH
 if backup_path is None:
     backup_path = rep_path+'/backup'
 
-tmp_path = p.TMP_PATH
-if tmp_path is None:
-    tmp_path = rep_path+'/tmp'
+tmp_path = rep_path+'/tmp'
 
 #créer un tableau associatif avec tous les chemins utiliser par l'appli
 list_path = {'rep_path': rep_path,
@@ -58,7 +56,7 @@ except:
 
 # tableau associant une fonction de actions.py pour chaque argument
 actions = {
-    '-h': "print('this is help')",
+    '-h': "os.system('cat README.md')",
     '-l': "act.listDBAction(cur)",
     '-s': "act.backupAllAction(cur, list_path, p.NB_BACKUP)",
     '-r': "act.restoreAllAction(list_path)"

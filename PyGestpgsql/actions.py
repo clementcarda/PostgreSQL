@@ -42,32 +42,6 @@ def restoreAllAction(list_path):
     functions.restoreBackUp(list_path, choosedArchive)
 
 
-
-
-
-
-
-#    sql = open(list_path['tmp_path'] + "/" + dbase + ".sql", 'w')
-#
-#    # se connecter à la BDD
-#    dbcur = functions.connector(p.HOST, p.USER, p.PASSWORD, dbase)
-#
-#    # Récuperer la liste des tables
-#    dbcur.execute("""SELECT table_name FROM information_schema.tables
-#                   WHERE table_schema = 'public'""")
-#
-#    # pour chaque table
-#    for table in dbcur.fetchall():
-#
-#        # récupéerer chaque ligne
-#        dbcur.execute("""SELECT * FROM %s""" % (table))
-#
-#        # pour chaque ligne
-#        for ligne in dbcur.fetchall():
-#            None
-#    dbcur.close()
-#    print(dbase)
-
 def restoreOneAction():
     #TODO demander au user quel BDD il souhaite restaurer,
         # faire comme restoreAll mais uniquement pour la BDD selectionné
